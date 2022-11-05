@@ -96,20 +96,22 @@ int IDigitalWheelRepository_append(digital_wheel record)
 
 digital_wheel IDigitalWheelRepository_get_nth_wheel(int rank)
 {
+
     struct index index;
+    printf("%d", rank);
     long shift = (rank - 1) * sizeof index;
     fseek(index_stream, shift, SEEK_SET);
     fread(&index, sizeof index, 1, index_stream);
     fseek(data_stream, index.recordStart, SEEK_SET);
     int myRecord[3];
     fread(myRecord, sizeof myRecord, 1, data_stream);
-    //digital_wheel dw = malloc(sizeof(struct digital_wheel));
+    // digital_wheel dw = malloc(sizeof(struct digital_wheel));
     digital_wheel dw = DigitalWheel_construct(myRecord[0], myRecord[1]);
     DigitalWheel_change_current_position(dw, myRecord[2]);
 
-    //dw->start = myRecord[0];
-    //dw->end = myRecord[1];
-    //dw->current = myRecord[2];
+    // dw->start = myRecord[0];
+    // dw->end = myRecord[1];
+    // dw->current = myRecord[2];
     return dw;
 }
 twoWheels IDigitalWheelRepository_get_nth_two_wheels(int rank)

@@ -57,12 +57,11 @@ void CircularBufferAppService_run_use_case(int c)
         break;
     case LOAD_LAST_SAVE:
     {
+        // if (!ICircularBufferRepository_open(FILE_DB_REPO))
+        //     return EXIT_FAILURE;
         int rank;
-        char number[2];
-        fgets(number, 2, stdin);
-        rank = atoi(number);
-        if (!ICircularBufferRepository_open(FILE_DB_REPO))
-            return EXIT_FAILURE;
+        printf("typeinrank: ");
+        scanf("%d", &rank);
         circular_buffer temps = ICircularBufferRepository_get_nth_cb(rank);
         cb = temps;
         printf("\nSUCESSFULLY READ\n");

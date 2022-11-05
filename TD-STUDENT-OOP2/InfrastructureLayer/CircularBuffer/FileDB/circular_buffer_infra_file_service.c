@@ -17,7 +17,7 @@ struct RECORD_CB
     unsigned long data_length;
     int offset_head;
     int offset_current;
-    char data[100]; // new in c99 !!
+    char data[10]; // new in c99 !!
 };
 
 struct circular_buffer
@@ -87,44 +87,69 @@ int ICircularBufferRepository_open(char *name)
 int ICircularBufferRepository_append(circular_buffer cb)
 {
     struct index index;
+    // struct RECORD_CB *record = malloc(sizeof(struct RECORD_CB));
     struct RECORD_CB record;
     record.offset_head = (cb->head - cb->tail) / sizeof(*(cb->head));
     record.offset_current = (cb->current - cb->tail) / sizeof(*(cb->current));
     record.data_length = cb->length;
+    // printf("head,curr,length %d %d %ld\n", record.offset_head, record.offset_current, record.data_length);
     char *temporay = cb->head - 1;
     int i = record.offset_head - 1;
-    while (temporay != cb->tail - 1)
+    while (i >= 0)
     {
-        record.data[i] = *(temporay--);
+        // printf("temp:%d-> ", *(temporay));
+        record.data[i] = *(temporay);
+        // printf("rec:%d , ", record.data[i]);
         i -= 1;
+        temporay--;
     }
     fseek(data_stream, 0L, SEEK_END);
     index.recordStart = ftell(data_stream);
     index.recordLength = sizeof(struct RECORD_CB);
-    fwrite(&record, sizeof(struct RECORD_CB), 1, data_stream);
+    fwrite(&record, index.recordLength, 1, data_stream);
+    struct RECORD_CB testrec;
+    // testing for reading capability
+    // fseek(data_stream, 0L, SEEK_SET);
+    // fread(&testrec, index.recordLength, 1, data_stream);
+    // // printf("\ntestrec\n");
+    // // printf("head,curr,length %d %d %ld\n", testrec.offset_head, testrec.offset_current, testrec.data_length);
+    // // for (int i = 0; i < testrec.offset_head; i++)
+    // // {
+    // //     printf("rec->%d", testrec.data[i]);
+    // // }
+    // // ret
     fseek(index_stream, 0L, SEEK_END);
-    fwrite(&index, sizeof(struct index), 1, index_stream);
+    fwrite(&index, sizeof index, 1, index_stream);
     return 1;
 }
 
-circular_buffer ICircularBufferRepository_get_nth_cb(int rank)
+circular_buffer CircularBufferRepository_get_nth_cb(int rank)
 {
+    // printf("stating get data\n");
     struct index index;
     long shift = (rank - 1) * sizeof index;
     fseek(index_stream, shift, SEEK_SET);
     fread(&index, sizeof index, 1, index_stream);
     fseek(data_stream, index.recordStart, SEEK_SET);
+    // struct RECORD_CB *myRecord = malloc(sizeof(struct RECORD_CB));
     struct RECORD_CB myRecord;
-    fread(&myRecord, sizeof myRecord, 1, data_stream);
-
+    fread(&myRecord, index.recordLength, 1, data_stream);
+    // printf("head,curr,length %d %d %ld\n", myRecord.offset_head, myRecord.offset_current, myRecord.data_length);
     circular_buffer cb = (circular_buffer)malloc(sizeof(struct circular_buffer));
     cb = CircularBuffer_construct(myRecord.data_length);
-    printf("cb created\n");
+    // printf("cb created\n");
     for (int i = 0; i < myRecord.offset_head; i++)
     {
+        // printf("rec->%d", myRecord.data[i]);
         CircularBuffer_append_char_at_head(cb, myRecord.data[i]);
     }
     cb->current = cb->tail + myRecord.offset_current;
-    printf("%c\n", *(cb->current));
+    printf("loaded current offset pos%d \n", myRecord.offset_current);
     return cb;
+}
+circular_buffer ICircularBufferRepository_get_nth_cb(int rank)
+{
+    if (!ICircularBufferRepository_open(FILE_DB_REPO))
+        return EXIT_FAILURE;
+    return CircularBufferRepository_get_nth_cb(rank);
 }
